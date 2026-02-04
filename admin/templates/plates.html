@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <title>Plates Management | Plate Access</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="layout">
+<aside class="sidebar">
+    <h2>🚗 Plate Access</h2>
+    <a href="/">📊 Dashboard</a>
+    <a href="/index">📋 Plates</a>
+    <a href="/logs">📝 Logs</a>
+    <a href="#">⚙️ Settings</a>
+    <a href="#" style="margin-top: auto; color: #ff7675;">🚪 Logout</a>
+</aside>
+
+        <main class="main">
+            <h1>Allowed Plates Management</h1>
+            <div class="grid-container" style="grid-template-columns: 1fr;">
+                <section class="card">
+                    <h3>Add New Number</h3>
+                    <form method="post" action="/add-plate" style="display: flex; gap: 10px;">
+                        <input name="plate" placeholder="KZ 001 AAA 01" required style="padding: 12px; flex: 1; border-radius: 6px; border: 1px solid #ddd;">
+                        <button class="button-blue">Save Plate</button>
+                    </form>
+                </section>
+
+                <section class="card">
+                    <h3>Registered Plates List</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Plate Number</th><th>Actions</th></tr></thead>
+                            <tbody>
+                                {% for plate in plates %}
+                                <tr>
+                                    <td><strong>{{ plate }}</strong></td>
+                                    <td>
+                                        <form method="post" action="/remove-plate">
+                                            <input type="hidden" name="plate" value="{{ plate }}">
+                                            <button class="button-red" style="padding: 6px 15px;">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Журнал доступа | Plate Access</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=61">
+</head>
+<body>
+<div class="layout">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <span style="font-size: 1.6rem;">🚗</span>
+            <h2 style="margin:0;">Plate Access</h2>
+        </div>
+
+        <nav>
+            <a href="/">📊 Панель управления</a>
+            <a href="/plates">📋 Номера авто</a>
+            <a href="/logs" class="active">📝 Журнал логов</a>
+            <a href="#">⚙️ Настройки</a>
+        </nav>
+
+        <a href="#" class="logout-btn">🚪 Выйти</a>
+    </aside>
+
+    <!-- ===== MAIN ===== -->
+    <main class="main">
+
+        <header class="page-header">
+            <h1>История доступа</h1>
+            <p>Полный журнал всех событий въезда и выезда</p>
+        </header>
+
+        <section class="logs-card">
+
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>Номер автомобиля</th>
+                        <th>Статус доступа</th>
+                        <th>Дата и время</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plate, status, time in logs %}
+                    <tr>
+                        <td class="plate">{{ plate }}</td>
+                        <td>
+                            <span class="status 
+                                {% if status == 'GRANTED' %}status-granted{% else %}status-denied{% endif %}">
+                                {{ status }}
+                            </span>
+                        </td>
+                        <td class="time">
+                            {{ time.strftime('%Y-%m-%d %H:%M:%S') if time else '—' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </section>
+
+    </main>
+</div>
+</body>
+</html>

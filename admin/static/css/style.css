@@ -1,0 +1,224 @@
+
+/* ===== BASE LAYOUT ===== */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.layout {
+    display: flex;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+    width: 260px;
+    background: #1e293b;
+    color: white;
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    z-index: 1000;
+}
+
+.sidebar nav a {
+    color: #94a3b8;
+    text-decoration: none;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.sidebar nav a.active,
+.sidebar nav a:hover {
+    background: #38bdf8;
+    color: white;
+}
+
+/* ===== MAIN CONTENT ===== */
+.main {
+    margin-left: 260px;
+    padding: 40px;
+    width: calc(100% - 260px);
+}
+
+/* ===== LOGS PAGE ===== */
+.logs-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
+.logs-subtitle {
+    color: #64748b;
+    margin-bottom: 20px;
+}
+
+/* ===== LOGS CARD ===== */
+.logs-card {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+    max-width: 900px;
+}
+
+/* ===== TABLE ===== */
+.logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.logs-table th {
+    text-align: left;
+    font-size: 0.85rem;
+    color: #64748b;
+    padding: 12px 10px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.logs-table td {
+    padding: 14px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
+}
+
+.logs-table tr:hover {
+    background: #f8fafc;
+}
+
+/* ===== STATUS BADGE ===== */
+.status {
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+
+.status-granted {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-denied {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+
+
+
+
+
+/* ===== CAMERA CARD ===== */
+.dashboard-card {
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(14px);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 12px 25px rgba(0,0,0,0.08);
+    margin-top: 20px;
+}
+
+/* ===== CAMERA TITLE ===== */
+.dashboard-card h3 {
+    margin: 0 0 14px 4px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+/* ===== VIDEO FRAME (50%) ===== */
+.video-frame {
+    position: relative;          /* ❗ МІНДЕТТІ */
+    width: 50%;                  /* сен сұраған 50% */
+    margin: 0 auto;              /* ортасына */
+    border-radius: 18px;
+    overflow: hidden;
+    background: #000;
+}
+
+/* Видео */
+.video-frame img {
+    width: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+/* ===== LIVE BADGE ===== */
+.video-frame::after {
+    content: "LIVE";
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+/* ===== CONTROLS ===== */
+.controls-row {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 16px;
+}
+
+/* ===== BUTTONS ===== */
+.btn {
+    border: none;
+    padding: 12px 26px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 170px;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+
+.btn-green {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+}
+
+.btn-red {
+    background: linear-gradient(135deg, #f87171, #ef4444);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px rgba(0,0,0,0.18);
+}
+
+/* ===== BUTTON ICON ===== */
+.btn-icon {
+    background: white;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-green .btn-icon { color: #16a34a; }
+.btn-red .btn-icon { color: #dc2626; }

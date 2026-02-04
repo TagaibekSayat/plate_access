@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель управления | Plate Access</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 40px;">
+                <span style="font-size: 1.5rem;">🚗</span>
+                <h2 style="margin: 0; border: none;">Контроль Доступа</h2>
+            </div>
+            <nav>
+                <a href="/" class="active">📊 Дашборд</a>
+                <a href="/plates">📋 Номера авто</a>
+                <a href="/logs">📝 Журнал логов</a>
+                <a href="#">⚙️ Настройки</a>
+            </nav>
+            
+            <div style="margin-top: auto; color: #94a3b8; font-size: 0.8rem;">
+                <div style="margin-bottom: 5px;">🇰🇿 Almaty, KZ</div>
+                <div style="font-weight: bold; color: white;">7°C ☁️ Облачно</div>
+            </div>
+            <a href="#" style="color: #f87171; margin-top: 20px; text-decoration: none;">🚪 Выйти</a>
+        </aside>
+
+<main class="main">
+    <header style="text-align: center; margin-bottom: 30px;">
+        <h1>Панель управления</h1>
+        <p style="color: #64748b; margin-top: 6px;">
+            Мониторинг и управление доступом в реальном времени
+        </p>
+    </header>
+
+<div class="dashboard-card">
+    <h3>Вид с камеры</h3>
+
+    <div class="video-frame">
+        <img src="/video_feed" alt="Live stream">
+    </div>
+
+    <div class="controls-row">
+        <form method="post" action="/barrier/open">
+            <button class="btn btn-green">
+                <span class="btn-icon">✓</span>
+                ОТКРЫТЬ
+            </button>
+        </form>
+
+        <form method="post" action="/barrier/close">
+            <button class="btn btn-red">
+                <span class="btn-icon">✕</span>
+                ЗАКРЫТЬ
+            </button>
+        </form>
+    </div>
+</div>
+
+
+</main>
+
+    </div>
+</body>
+</html>
