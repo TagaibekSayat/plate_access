@@ -1,7 +1,7 @@
 import time
 
 class PlateStability:
-    def __init__(self, frames_required=2, cooldown=5):
+    def __init__(self, frames_required=4, cooldown=5):
         self.frames_required = frames_required
         self.cooldown = cooldown
         self.counter = {}
