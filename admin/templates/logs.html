@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Журнал доступа | Plate Access</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=61">
+    <link rel="stylesheet" href="/static/css/style.css?v=2">
 </head>
 <body>
+
 <div class="layout">
 
-    <!-- ===== SIDEBAR ===== -->
     <aside class="sidebar">
         <div class="sidebar-logo">
             <span style="font-size: 1.6rem;">🚗</span>
@@ -17,20 +17,16 @@
 
         <nav>
             <a href="/">📊 Панель управления</a>
-            <a href="/plates">📋 Номера авто</a>
             <a href="/logs" class="active">📝 Журнал логов</a>
             <a href="#">⚙️ Настройки</a>
         </nav>
-
-        <a href="#" class="logout-btn">🚪 Выйти</a>
     </aside>
 
-    <!-- ===== MAIN ===== -->
     <main class="main">
 
         <header class="page-header">
-            <h1>История доступа</h1>
-            <p>Полный журнал всех событий въезда и выезда</p>
+            <h1>История въезда и выезда</h1>
+            <p>Полный журнал всех автомобилей</p>
         </header>
 
         <section class="logs-card">
@@ -38,23 +34,51 @@
             <table class="logs-table">
                 <thead>
                     <tr>
-                        <th>Номер автомобиля</th>
-                        <th>Статус доступа</th>
-                        <th>Дата и время</th>
+                        <th>Номер</th>
+                        <th>Событие</th>
+                        <th>Дата</th>
+                        <th>Длительность</th>
+                        <th>Оплачено до</th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    {% for plate, status, time in logs %}
+                    {% for plate, status, entry_time, exit_time, duration, paid_until in logs %}
                     <tr>
                         <td class="plate">{{ plate }}</td>
+
                         <td>
-                            <span class="status 
-                                {% if status == 'GRANTED' %}status-granted{% else %}status-denied{% endif %}">
-                                {{ status }}
-                            </span>
+                            {% if status == 'INSIDE' %}
+                                <span class="status status-granted">🚗 ВЪЕЗД</span>
+                            {% elif status == 'EXITED' %}
+                                <span class="status status-denied">🚪 ВЫЕЗД</span>
+                            {% endif %}
                         </td>
-                        <td class="time">
-                            {{ time.strftime('%Y-%m-%d %H:%M:%S') if time else '—' }}
+
+                        <td>
+                            {% if status == 'INSIDE' and entry_time %}
+                                {{ entry_time.strftime('%Y-%m-%d %H:%M') }}
+                            {% elif exit_time %}
+                                {{ exit_time.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if duration %}
+                                {{ (duration // 3600) }} ч {{ ((duration % 3600) // 60) }} мин
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if paid_until %}
+                                {{ paid_until.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                <span style="color:#c0392b;">Не оплачено</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -64,6 +88,8 @@
         </section>
 
     </main>
+
 </div>
+
 </body>
 </html>

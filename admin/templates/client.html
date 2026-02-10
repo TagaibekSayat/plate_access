@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Parking Payment</title>
+</head>
+<body>
+
+<h2>Өз номеріңізді таңдаңыз</h2>
+
+{% for plate in plates %}
+<form method="post" action="/client/pay">
+    <input type="hidden" name="plate" value="{{ plate }}">
+
+    <strong>{{ plate }}</strong><br>
+
+    <select name="hours">
+        <option value="1">1 сағат</option>
+        <option value="3">3 сағат</option>
+        <option value="24">1 күн</option>
+        <option value="72">3 күн</option>
+    </select>
+
+    <button type="submit">Төлеу</button>
+</form>
+<hr>
+{% endfor %}
+
+</body>
+</html>

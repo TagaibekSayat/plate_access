@@ -1,6 +1,16 @@
 from db.connection import get_conn
 
+def normalize_plate(plate: str) -> str:
+    """
+    БАРЛЫҚ жерден келген номерді
+    БАЗА ФОРМАТЫНА келтіреміз
+    """
+    return plate.replace(" ", "").upper()
+
+
 def is_allowed(plate: str) -> bool:
+    plate = normalize_plate(plate)
+
     conn = get_conn()
     cur = conn.cursor()
 
@@ -10,6 +20,7 @@ def is_allowed(plate: str) -> bool:
     )
 
     result = cur.fetchone()
+
     cur.close()
     conn.close()
 
@@ -17,6 +28,8 @@ def is_allowed(plate: str) -> bool:
 
 
 def log_access(plate: str, status: str, reason: str):
+    plate = normalize_plate(plate)
+
     conn = get_conn()
     cur = conn.cursor()
 
