@@ -4,6 +4,9 @@ import time
 import threading
 from threading import Lock
 import argparse
+from collections import Counter
+from ai.yolo_plate import detect_plate_regions
+
 
 # Жобаның ішкі модульдерінен импорттау
 from camera.capture import get_frame, cap
@@ -17,7 +20,6 @@ from db.parking_repo import (
 from barrier.controller import BarrierController
 
 # ===================== ARGUMENTS =====================
-# Программаны іске қосқанда параметрлерді қабылдау (мысалы: --camera-type ENTRY)
 parser = argparse.ArgumentParser(description="Parking Camera Process")
 parser.add_argument("--camera-index", type=int, required=True)
 parser.add_argument("--camera-type", choices=["ENTRY", "EXIT"], required=True)
@@ -29,19 +31,22 @@ CAMERA_INDEX = args.camera_index
 CAMERA_TYPE = args.camera_type
 ZONE_ID = args.zone_id
 
-PLATE_COOLDOWN = 5  # Бір номерді қайта тану арасындағы үзіліс (секунд)
+PLATE_COOLDOWN = 5
 
 # ===================== INIT =====================
 
-# Веб-интерфейс үшін кадр сақтайтын папканы құру
 os.makedirs("admin/static", exist_ok=True)
 
 latest_frame = None
-frame_lock = Lock()  # Ағындар арасында кадрды қауіпсіз алмасу үшін
+frame_lock = Lock()
 
 processed_plate_info = ""
 last_plate = None
 last_plate_time = 0
+
+# 🔥 Majority Vote буфері
+plate_buffer = []
+BUFFER_SIZE = 5
 
 print(f"🚀 STARTED | CAMERA={CAMERA_INDEX} | TYPE={CAMERA_TYPE} | ZONE={ZONE_ID}")
 
@@ -50,11 +55,9 @@ barrier = BarrierController(min_open_time=10)
 # ===================== AI RECOGNITION THREAD =====================
 
 def ai_recognition_thread():
-    """Нөмірді тану және логиканы өңдеу ағыны"""
-    global latest_frame, processed_plate_info, last_plate, last_plate_time
+    global latest_frame, processed_plate_info, last_plate, last_plate_time, plate_buffer
 
     while True:
-        # Кадрды негізгі ағыннан көшіріп алу
         with frame_lock:
             frame = None if latest_frame is None else latest_frame.copy()
 
@@ -62,52 +65,71 @@ def ai_recognition_thread():
             time.sleep(0.05)
             continue
 
-        # Оптимизация: тану жылдамдығы үшін кадр өлшемін кішірейту
-        small = cv2.resize(frame, (480, 320))
-        texts = recognize_plate(small)
+        # 🔥 YOLO арқылы номер аймағын табу
+        plates = detect_plate_regions(frame)
 
-        if not texts:
+        if not plates:
             time.sleep(0.1)
             continue
 
-        plate = assemble_plate_from_texts(texts)
-        now = time.time()
+        detected_plate = None
 
-        if not plate:
+        # Әр табылған plate-ті OCR жасау
+        for plate_img in plates:
+            texts = recognize_plate(plate_img)
+
+            if not texts:
+                continue
+
+            plate = assemble_plate_from_texts(texts)
+
+            if plate:
+                detected_plate = plate
+                break
+
+        if not detected_plate:
             continue
 
-        # Cooldown тексеру: бір көлікті қайта-қайта өңдемеу үшін
+        # 🔥 Majority Vote
+        plate_buffer.append(detected_plate)
+
+        if len(plate_buffer) < BUFFER_SIZE:
+            continue
+
+        plate = Counter(plate_buffer).most_common(1)[0][0]
+        plate_buffer.clear()
+
+        now = time.time()
+
+        # Cooldown тексеру
         if plate == last_plate and now - last_plate_time < PLATE_COOLDOWN:
             continue
 
         last_plate = plate
         last_plate_time = now
 
-        # --- КІРУ ЛОГИКАСЫ ---
+        # ================= ENTRY =================
         if CAMERA_TYPE == "ENTRY":
+
             if is_inside(plate):
                 processed_plate_info = f"⚠️ ІШТЕ БАР: {plate}"
                 print(f"[ENTRY] {plate} already inside")
                 continue
 
-            register_entry(plate)
-            processed_plate_info = f"💰 ТӨЛЕМ КЕРЕК: {plate}"
-            print(f"[ENTRY] {plate} waiting for payment")
+            if has_valid_payment(plate):
+                register_entry(plate)
+                barrier.open()
+                processed_plate_info = f"✅ КІРДІ: {plate}"
+                print(f"[ENTRY] {plate} payment OK → opened")
+            else:
+                processed_plate_info = f"💰 ТӨЛЕМ КЕРЕК: {plate}"
+                print(f"[ENTRY] {plate} payment required")
 
-            # Төлемді 60 секунд бойы күту
-            wait_start = time.time()
-            while time.time() - wait_start < 60:
-                if has_valid_payment(plate):
-                    barrier.open()
-                    processed_plate_info = f"✅ КІРДІ: {plate}"
-                    print(f"[ENTRY] {plate} payment OK → opened")
-                    break
-                time.sleep(1)
-
-        # --- ШЫҒУ ЛОГИКАСЫ ---
+        # ================= EXIT =================
         elif CAMERA_TYPE == "EXIT":
+
             if not is_inside(plate):
-                barrier.open()  # Тіркелмеген көліктерді де шығару (Fail-safe)
+                barrier.open()
                 processed_plate_info = f"🚪 ШЫҒУ: {plate}"
                 print(f"[EXIT] {plate} no session → opened")
                 continue
@@ -122,17 +144,17 @@ def ai_recognition_thread():
                     processed_plate_info = f"⛔ ТӨЛЕМ ЖОҚ: {plate}"
                     print(f"[EXIT] {plate} payment required")
             except Exception as e:
-                # Қандай да бір қате кетсе, шлагбаумды ашу (көлік тұрып қалмауы үшін)
                 barrier.open()
                 processed_plate_info = f"⚠️ FAIL-SAFE EXIT: {plate}"
                 print(f"[EXIT] FAIL-SAFE for {plate}: {e}")
 
-        time.sleep(0.2)
+        time.sleep(0.1)
 
-# AI ағынын фондық режимде іске қосу
+
+
 threading.Thread(target=ai_recognition_thread, daemon=True).start()
 
-# ===================== MAIN LOOP (DISPLAY & CAPTURE) =====================
+# ===================== MAIN LOOP =====================
 
 try:
     while True:
@@ -140,14 +162,12 @@ try:
         if frame is None:
             continue
 
-        # Кадрды AI ағыны көру үшін сақтау
         with frame_lock:
             latest_frame = frame.copy()
 
-        # Экранға ақпаратты шығару (Кірді/Шықты)
         if processed_plate_info:
             ok = ("КІРДІ" in processed_plate_info or "ШЫҚТЫ" in processed_plate_info)
-            color = (0, 255, 0) if ok else (0, 0, 255) # Жасыл немесе Қызыл
+            color = (0, 255, 0) if ok else (0, 0, 255)
 
             cv2.putText(
                 frame,
@@ -159,7 +179,6 @@ try:
                 3
             )
 
-        # Веб-мониторинг үшін кадрды JPEG ретінде сақтау
         web_view = cv2.resize(frame, (800, 450))
         cv2.imwrite(
             "admin/static/live.jpg",
@@ -167,10 +186,8 @@ try:
             [cv2.IMWRITE_JPEG_QUALITY, 65]
         )
 
-        # Терезеде көрсету
         cv2.imshow(f"PARKING {CAMERA_TYPE} ZONE {ZONE_ID}", web_view)
 
-        # 'q' басылса тоқтату
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 

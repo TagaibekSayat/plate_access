@@ -1,56 +1,44 @@
-import cv2
+# import cv2
 
-def detect_plate_regions(frame):
-    # 1. Түсті сұрға айналдыру және шуды басу
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    # bilateralFilter жиектерді сақтай отырып, шуды жақсы тазалайды
-    gray = cv2.bilateralFilter(gray, 11, 17, 17)
+# def detect_plate_regions(frame):
+#     plates = []
 
-    # 2. Жиектерді анықтау (Canny Edge Detection)
-    edges = cv2.Canny(gray, 50, 200)
-    
-    # 3. Контурларды іздеу
-    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    # Ең үлкен 10 контурды ғана аламыз (нөмір кішкентай болмауы керек)
-    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
+#     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+#     gray = cv2.bilateralFilter(gray, 11, 17, 17)
 
-    plates = []
+#     edged = cv2.Canny(gray, 50, 150)
 
-    for cnt in contours:
-        # Контурды жақындату (approximation)
-        peri = cv2.arcLength(cnt, True)
-        approx = cv2.approxPolyDP(cnt, 0.03 * peri, True)
+#     contours, _ = cv2.findContours(
+#         edged.copy(),
+#         cv2.RETR_EXTERNAL,   # тек сыртқы контур
+#         cv2.CHAIN_APPROX_SIMPLE
+#     )
 
-        # 4. Төртбұрыш па? (Нөмір пішіні төртбұрыш болуы керек)
-        if len(approx) != 4:
-            continue
+#     for cnt in contours:
+#         area = cv2.contourArea(cnt)
 
-        x, y, w, h = cv2.boundingRect(approx)
-        ratio = w / float(h) # Ені мен биіктігінің қатынасы
-        area = w * h         # Ауданы
+#         # тым кішкентай немесе тым үлкендерді алып тастау
+#         if area < 2000 or area > 50000:
+#             continue
 
-        # 5. Нөмірдің стандартты пропорцияларын тексеру (мысалы, 520мм x 112мм)
-        # Қазақстандық нөмірлер үшін ені биіктігінен 2.5-5.0 есе үлкен болуы керек
-        if not (2.5 < ratio < 5.0 and area > 5000):
-            continue
+#         x, y, w, h = cv2.boundingRect(cnt)
 
-        # 6. Нөмірді кесіп алу
-        plate = frame[y:y+h, x:x+w]
+#         aspect_ratio = w / float(h)
 
-        # 7. OCR-ға дайындау (Бинаризация)
-        plate_gray = cv2.cvtColor(plate, cv2.COLOR_BGR2GRAY)
-        # Кескінді 2 есе үлкейту (OCR жақсырақ оқуы үшін)
-        plate_gray = cv2.resize(
-            plate_gray, None, fx=2, fy=2,
-            interpolation=cv2.INTER_CUBIC
-        )
+#         # Нақты номер пропорциясы
+#         if 2.5 <= aspect_ratio <= 5.5:
 
-        # Otsu әдісі арқылы ақ-қара түске айналдыру
-        _, plate_bin = cv2.threshold(
-            plate_gray, 0, 255,
-            cv2.THRESH_BINARY + cv2.THRESH_OTSU
-        )
+#             # Минималды өлшем
+#             if w > 120 and h > 30:
 
-        plates.append(plate_bin)
+#                 # ROI-ны аздап кеңейтеміз
+#                 pad = 5
+#                 x1 = max(0, x - pad)
+#                 y1 = max(0, y - pad)
+#                 x2 = min(frame.shape[1], x + w + pad)
+#                 y2 = min(frame.shape[0], y + h + pad)
 
-    return plates
+#                 plate = frame[y1:y2, x1:x2]
+#                 plates.append(plate)
+
+#     return plates
