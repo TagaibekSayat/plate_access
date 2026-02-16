@@ -66,6 +66,7 @@ def assemble_plate_from_texts(texts):
 
     for t in texts:
         t = re.sub(r'[^A-Z0-9]', '', t.upper())
+
         if len(t) >= 2:
             parts.append(t)
 
@@ -74,10 +75,12 @@ def assemble_plate_from_texts(texts):
 
     candidate = "".join(parts)
 
-    if is_valid_plate(candidate):
-        return candidate
+    # 🔥 Егер басында ел коды болса (2 әріп), бірақ кейін сан келсе — алып тастаймыз
+    if len(candidate) > 6 and candidate[:2].isalpha() and candidate[2].isdigit():
+        candidate = candidate[2:]
 
-    return None
+    return candidate
+
 
 
 # ================= RECOGNIZE =================
