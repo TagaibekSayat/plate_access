@@ -5,6 +5,7 @@ import threading
 from threading import Lock
 import argparse
 from collections import Counter
+import re
 
 from ai.yolo_plate import detect_plate_regions
 from camera.capture import get_frame, cap
@@ -55,16 +56,88 @@ barrier = BarrierController(min_open_time=10)
 print(f"🚀 STARTED | CAMERA={CAMERA_INDEX} | TYPE={CAMERA_TYPE} | ZONE={ZONE_ID}")
 
 
+# ===================== NORMALIZE =====================
+
 def normalize_plate(plate: str) -> str:
-    return plate.replace(" ", "").replace("-", "").replace("_", "").upper().strip()
-    
+    plate = plate.replace(" ", "").replace("-", "").replace("_", "").upper().strip()
+
+    if plate.startswith("KZ"):
+        plate = plate[2:]
+
+    for code in ["RUS", "UZ", "KG", "BY", "AM"]:
+        if plate.endswith(code):
+            plate = plate[:-len(code)]
+
+    return plate
+
+# def extract_real_plate(text: str):
+
+#     text = text.upper()
+
+#     patterns = [
+#         r'[A-Z]\d{3}[A-Z]{2}\d{2,3}',   # RU
+#         r'\d{3}[A-Z]{2,3}\d{2}',       # KZ NEW
+#         r'[A-Z]\d{3}[A-Z]{2}',         # KZ OLD
+#     ]
+
+#     for pattern in patterns:
+#         matches = re.findall(pattern, text)
+#         if matches:
+#             # Ең ұзын match аламыз
+#             return max(matches, key=len)
+
+#     return None
 
 
-def similar(a, b):
-    if len(a) != len(b):
+
+# ===================== SMART SYMBOL FIX =====================
+
+REPLACE_MAP = {
+
+}
+
+def smart_fix(plate):
+    return "".join(REPLACE_MAP.get(c, c) for c in plate)
+
+
+# ===================== KZ LOGIC =====================
+
+def is_kz_plate_loose(plate):
+    if len(plate) < 6 or len(plate) > 8:
         return False
-    diff = sum(1 for x, y in zip(a, b) if x != y)
-    return diff <= 1
+
+    digits = sum(c.isdigit() for c in plate)
+    letters = sum(c.isalpha() for c in plate)
+
+    return digits >= 4 and letters >= 2
+
+
+def kz_position_fix(plate):
+
+    if len(plate) < 6:
+        return plate
+
+    chars = list(plate)
+
+    # 1-3 цифр
+    for i in range(min(3, len(chars))):
+        if chars[i] in ["O", "I"]:
+            chars[i] = REPLACE_MAP.get(chars[i], chars[i])
+
+    # 4-6 әріп
+    for i in range(3, min(6, len(chars))):
+        if chars[i] == "0":
+            chars[i] = "O"
+        if chars[i] == "1":
+            chars[i] = "I"
+
+    # регион цифр
+    if len(chars) >= 8:
+        for i in range(6, 8):
+            if chars[i] in ["O", "I"]:
+                chars[i] = REPLACE_MAP.get(chars[i], chars[i])
+
+    return "".join(chars)
 
 
 def is_universal_valid(plate):
@@ -76,6 +149,32 @@ def is_universal_valid(plate):
         return False
     return True
 
+
+# ===================== SIMILAR CHECK =====================
+
+SIMILAR_GROUPS = [
+
+]
+
+def is_visually_similar(a, b):
+    if a == b:
+        return True
+    for group in SIMILAR_GROUPS:
+        if a in group and b in group:
+            return True
+    return False
+
+
+def similar(a, b):
+    if len(a) != len(b):
+        return False
+
+    diff = 0
+    for x, y in zip(a, b):
+        if not is_visually_similar(x, y):
+            diff += 1
+
+    return diff <= 1
 
 
 # ===================== AI THREAD =====================
@@ -92,37 +191,53 @@ def ai_recognition_thread():
                 frame = latest_frame.copy()
 
         if frame is None:
-            time.sleep(0.05)
+            time.sleep(0.03)
             continue
 
         plates = detect_plate_regions(frame)
 
         if not plates:
-            # Егер номер көрінбей кетсе unlock тексереміз
             if locked_plate and time.time() - plate_last_seen > UNLOCK_DELAY:
                 locked_plate = None
-            time.sleep(0.05)
+            time.sleep(0.03)
             continue
 
         detected_plate = None
 
         for plate_img in plates:
+
+            # 🔥 OCR алдында upscale
+            plate_img = cv2.resize(
+                plate_img,
+                None,
+                fx=2,
+                fy=2,
+                interpolation=cv2.INTER_CUBIC
+            )
+
             texts = recognize_plate(plate_img)
             if not texts:
                 continue
 
             plate = assemble_plate_from_texts(texts)
-            if plate:
-                detected_plate = normalize_plate(plate)
+            if not plate:
+                continue
+
+            plate = normalize_plate(plate)
+            plate = smart_fix(plate)
+            plate = kz_position_fix(plate)
+
+            if is_kz_plate_loose(plate):
+                detected_plate = plate
+                break
+
+            if is_universal_valid(plate):
+                detected_plate = plate
                 break
 
         if not detected_plate:
             continue
 
-        if not is_universal_valid(detected_plate):
-             continue
-
-        # ===== Majority vote =====
         plate_buffer.append(detected_plate)
 
         if len(plate_buffer) < BUFFER_SIZE:
@@ -133,29 +248,22 @@ def ai_recognition_thread():
 
         now = time.time()
 
-        # ===== LOCK SYSTEM =====
         if locked_plate:
-
-            # Егер сол номер жалғасып тұрса — тек уақыт жаңартамыз
             if similar(plate, locked_plate):
                 plate_last_seen = now
                 continue
 
-            # Егер басқа номер көрінді бірақ ескі әлі кетпеді
             if now - plate_last_seen < UNLOCK_DELAY:
-               continue
+                continue
 
-            # Ескі номер толық жоғалды
             locked_plate = None
-            plate_buffer.clear()
 
-        # Жаңа номерді бекітеміз
         locked_plate = plate
         plate_last_seen = now
-        plate_buffer.clear()
 
 
         # ================= ENTRY =================
+
         if CAMERA_TYPE == "ENTRY":
 
             if is_inside(plate):
@@ -175,6 +283,7 @@ def ai_recognition_thread():
 
 
         # ================= EXIT =================
+
         elif CAMERA_TYPE == "EXIT":
 
             if not is_inside(plate):
@@ -192,7 +301,7 @@ def ai_recognition_thread():
                 processed_plate_info = f"{plate} PAYMENT REQUIRED"
                 log_access(plate, "DENIED", "EXIT_NO_PAYMENT")
 
-        time.sleep(0.05)
+        time.sleep(0.03)
 
 
 threading.Thread(target=ai_recognition_thread, daemon=True).start()

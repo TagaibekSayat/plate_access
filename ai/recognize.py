@@ -1,31 +1,26 @@
 import re
 import cv2
 import easyocr
+import torch
 
 # ================= OCR INIT =================
 
-reader = easyocr.Reader(['en'], gpu=False)
+reader = easyocr.Reader(['en','ru'], gpu=True)
+print("Cuda available:", torch.cuda.is_available())
 
-# ================= OCR FIX =================
+if torch.cuda.is_available():
+    print("Current device:",torch.cuda.current_device())
+    print("Device name:", torch.cuda.get_device_name(0))
 
-COUNTRY_CODES = {
-    "KZ", "RK",
-    "RUS", "RU",
-    "UZ",
-    "CN",
-    "KG",
-    "BY",
-    "AM"
-}
+# ================= SAFE OCR FIX =================
 
 DIGIT_FIX = {
 
 }
 
 LETTER_FIX = {
-
+ 
 }
-
 
 def fix_common_ocr(text: str) -> str:
     text = text.upper()
@@ -40,78 +35,74 @@ def fix_common_ocr(text: str) -> str:
     return fixed
 
 
-
-def is_valid_plate(text):
-    if not (5 <= len(text) <= 10):
-        return False
-
-    digits = sum(c.isdigit() for c in text)
-    letters = sum(c.isalpha() for c in text)
-
-    if digits < 2:
-        return False
-
-    if letters == 0:
-        return False
-
-    return True
-
 # ================= ASSEMBLE =================
 
 def assemble_plate_from_texts(texts):
+
     if not texts:
         return None
 
-    parts = []
+    candidate = ""
 
     for t in texts:
-        t = re.sub(r'[^A-Z0-9]', '', t.upper())
+        clean = re.sub(r'[^A-Z0-9]', '', t.upper())
+        candidate += clean
 
-        if len(t) >= 2:
-            parts.append(t)
-
-    if not parts:
+    if len(candidate) < 6:
         return None
 
-    candidate = "".join(parts)
-
-    # 🔥 Егер басында ел коды болса (2 әріп), бірақ кейін сан келсе — алып тастаймыз
-    if len(candidate) > 6 and candidate[:2].isalpha() and candidate[2].isdigit():
-        candidate = candidate[2:]
-
     return candidate
-
 
 
 # ================= RECOGNIZE =================
 
 def recognize_plate(img):
+
+    # ---- Resize (агрессивный) ----
+    h, w = img.shape[:2]
+    if w < 400:
+        scale = 400 / w
+        img = cv2.resize(
+            img,
+            None,
+            fx=scale,
+            fy=scale,
+            interpolation=cv2.INTER_CUBIC
+        )
+
+    # ---- Gray ----
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # Контраст күшейту
-    gray = cv2.equalizeHist(gray)
+    # ---- CLAHE (equalizeHist орнына) ----
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+    gray = clahe.apply(gray)
 
-    # Шум азайту
-    gray = cv2.GaussianBlur(gray, (5, 5), 0)
+    # ---- Noise removal ----
+    gray = cv2.bilateralFilter(gray, 9, 75, 75)
 
-    # Threshold
-    thresh = cv2.adaptiveThreshold(
+    # ---- Light sharpen ----
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2,2))
+    gray = cv2.morphologyEx(gray, cv2.MORPH_CLOSE, kernel)
+
+    # ---- OCR ----
+    results = reader.readtext(
         gray,
-        255,
-        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv2.THRESH_BINARY_INV,
-        15,
-        5
+        allowlist="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        detail=1,
+        paragraph=False,
+        decoder='beamsearch'
     )
 
-    # Морфология – жіңішке сызықтарды жою
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-    cleaned = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+    texts = []
 
-    # Кішкентай шумдарды алып тастау
-    cleaned = cv2.medianBlur(cleaned, 3)
+    for bbox, text, conf in results:
 
-    # EasyOCR
-    results = reader.readtext(cleaned, detail=0)
+        if conf < 0.65:   # көтердік
+            continue
 
-    return results
+        text = re.sub(r'[^A-Z0-9]', '', text.upper())
+
+        if text:
+            texts.append(text)
+
+    return texts
