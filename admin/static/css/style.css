@@ -140,19 +140,25 @@ body {
 
 /* ===== VIDEO FRAME (50%) ===== */
 .video-frame {
-    position: relative;          /* ❗ МІНДЕТТІ */
-    width: 50%;                  /* сен сұраған 50% */
-    margin: 0 auto;              /* ортасына */
+    position: relative;
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
     border-radius: 18px;
     overflow: hidden;
     background: #000;
+    border: 1px solid #0f172a22;
+    box-shadow: 0 18px 36px rgba(2, 6, 23, 0.2);
 }
 
 /* Видео */
 .video-frame img {
     width: 100%;
     display: block;
-    object-fit: cover;
+    height: auto;
+    object-fit: contain;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
 }
 
 /* ===== LIVE BADGE ===== */
@@ -222,3 +228,4 @@ body {
 
 .btn-green .btn-icon { color: #16a34a; }
 .btn-red .btn-icon { color: #dc2626; }
+

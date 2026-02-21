@@ -10,6 +10,7 @@ import re
 from ai.yolo_plate import detect_plate_regions
 from camera.capture import get_frame, cap
 from ai.recognize import recognize_plate, assemble_plate_from_texts
+from ai.plate_patterns import PLATE_PATTERNS
 
 from db.parking_repo import (
     is_inside,
@@ -47,6 +48,8 @@ frame_lock = Lock()
 
 processed_plate_info = ""
 plate_buffer = []
+latest_plate_bbox = None
+latest_plate_text = ""
 
 locked_plate = None
 plate_last_seen = 0
@@ -93,7 +96,11 @@ def normalize_plate(plate: str) -> str:
 # ===================== SMART SYMBOL FIX =====================
 
 REPLACE_MAP = {
-
+    "O": "0",
+    "I": "1",
+    "Z": "2",
+    "S": "5",
+    "B": "8",
 }
 
 def smart_fix(plate):
@@ -110,6 +117,85 @@ def is_kz_plate_loose(plate):
     letters = sum(c.isalpha() for c in plate)
 
     return digits >= 4 and letters >= 2
+
+
+def is_kz_plate_strict(plate: str) -> bool:
+    return bool(
+        re.fullmatch(PLATE_PATTERNS["KZ_NEW_3L"], plate)
+        or re.fullmatch(PLATE_PATTERNS["KZ_NEW_2L"], plate)
+        or re.fullmatch(PLATE_PATTERNS["KZ_OLD"], plate)
+    )
+
+
+def _digit_like(c: str) -> str:
+    return {
+        "O": "0",
+        "I": "1",
+        "L": "1",
+        "Z": "2",
+        "S": "5",
+        "B": "8",
+    }.get(c, c)
+
+
+def _letter_like(c: str) -> str:
+    return {
+        "0": "O",
+        "1": "I",
+        "2": "Z",
+        "4": "A",
+        "5": "S",
+        "6": "G",
+        "8": "B",
+    }.get(c, c)
+
+
+def kz_force_candidate(plate: str) -> str | None:
+    # Frequent OCR split issue: thin separator inside plate is read as '1'
+    # Example: 888AVA04 -> 8884V4104 or 888AVA104.
+    compact = plate.replace(" ", "").replace("-", "")
+    candidates = [compact]
+
+    if len(compact) == 9:
+        candidates.append(compact[:6] + compact[7:])
+
+    for cand in candidates:
+        if len(cand) == 8:
+            chars = list(cand)
+            for i in range(3):
+                chars[i] = _digit_like(chars[i])
+            for i in range(3, 6):
+                chars[i] = _letter_like(chars[i])
+            for i in range(6, 8):
+                chars[i] = _digit_like(chars[i])
+            fixed = "".join(chars)
+            if is_kz_plate_strict(fixed):
+                return fixed
+
+        if len(cand) == 7:
+            chars = list(cand)
+            for i in range(3):
+                chars[i] = _digit_like(chars[i])
+            for i in range(3, 5):
+                chars[i] = _letter_like(chars[i])
+            for i in range(5, 7):
+                chars[i] = _digit_like(chars[i])
+            fixed = "".join(chars)
+            if is_kz_plate_strict(fixed):
+                return fixed
+
+        if len(cand) == 6:
+            chars = list(cand)
+            chars[0] = _letter_like(chars[0])
+            for i in range(1, 4):
+                chars[i] = _digit_like(chars[i])
+            for i in range(4, 6):
+                chars[i] = _letter_like(chars[i])
+            fixed = "".join(chars)
+            if is_kz_plate_strict(fixed):
+                return fixed
+
+    return None
 
 
 def kz_position_fix(plate):
@@ -153,7 +239,13 @@ def is_universal_valid(plate):
 # ===================== SIMILAR CHECK =====================
 
 SIMILAR_GROUPS = [
-
+    set("0O"),
+    set("1I"),
+    set("2Z"),
+    set("4A"),
+    set("5S"),
+    set("6G"),
+    set("8B"),
 ]
 
 def is_visually_similar(a, b):
@@ -182,6 +274,7 @@ def similar(a, b):
 def ai_recognition_thread():
     global latest_frame, processed_plate_info
     global locked_plate, plate_last_seen, plate_buffer
+    global latest_plate_bbox, latest_plate_text
 
     while True:
 
@@ -194,17 +287,20 @@ def ai_recognition_thread():
             time.sleep(0.03)
             continue
 
-        plates = detect_plate_regions(frame)
+        detections = detect_plate_regions(frame, return_boxes=True)
 
-        if not plates:
+        if not detections:
             if locked_plate and time.time() - plate_last_seen > UNLOCK_DELAY:
                 locked_plate = None
+                latest_plate_bbox = None
+                latest_plate_text = ""
             time.sleep(0.03)
             continue
 
         detected_plate = None
+        detected_bbox = None
 
-        for plate_img in plates:
+        for plate_img, bbox in detections:
 
             # 🔥 OCR алдында upscale
             plate_img = cv2.resize(
@@ -227,12 +323,21 @@ def ai_recognition_thread():
             plate = smart_fix(plate)
             plate = kz_position_fix(plate)
 
+            kz_forced = kz_force_candidate(plate)
+            if kz_forced:
+                plate = kz_forced
+                detected_plate = plate
+                detected_bbox = bbox
+                break
+
             if is_kz_plate_loose(plate):
                 detected_plate = plate
+                detected_bbox = bbox
                 break
 
             if is_universal_valid(plate):
                 detected_plate = plate
+                detected_bbox = bbox
                 break
 
         if not detected_plate:
@@ -260,6 +365,8 @@ def ai_recognition_thread():
 
         locked_plate = plate
         plate_last_seen = now
+        latest_plate_bbox = detected_bbox
+        latest_plate_text = plate
 
 
         # ================= ENTRY =================
@@ -319,6 +426,21 @@ try:
         with frame_lock:
             latest_frame = frame.copy()
 
+        if latest_plate_bbox:
+            x1, y1, x2, y2 = latest_plate_bbox
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+            if latest_plate_text:
+                cv2.putText(
+                    frame,
+                    latest_plate_text,
+                    (x1, max(25, y1 - 10)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.85,
+                    (46, 204, 113),
+                    2,
+                    cv2.LINE_AA
+                )
+
         if processed_plate_info:
             ok = "OK" in processed_plate_info
             color = (0, 255, 0) if ok else (0, 0, 255)
@@ -333,8 +455,11 @@ try:
                 3
             )
 
-        web_view = cv2.resize(frame, (800, 450))
-        cv2.imwrite("admin/static/live.jpg", web_view, [cv2.IMWRITE_JPEG_QUALITY, 65])
+        h, w = frame.shape[:2]
+        target_w = min(w, 1280)
+        target_h = int(h * (target_w / w))
+        web_view = cv2.resize(frame, (target_w, target_h), interpolation=cv2.INTER_AREA)
+        cv2.imwrite("admin/static/live.jpg", web_view, [cv2.IMWRITE_JPEG_QUALITY, 90])
 
         cv2.imshow(f"PARKING {CAMERA_TYPE} ZONE {ZONE_ID}", web_view)
 
