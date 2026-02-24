@@ -1,29 +1,73 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Parking Payment</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="3">
+    <title>Клиентская оплата</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=8">
 </head>
-<body>
+<body class="client-body">
+    <div class="client-shell client-shell-single">
+        <main class="client-main client-main-wide">
+            <header class="client-header">
+                <h1>Оплата парковки</h1>
+                <p>Отображается только последний номер, который сейчас находится внутри.</p>
+            </header>
 
-<h2>Өз номеріңізді таңдаңыз</h2>
+            {% if session %}
+            {% set plate = session[0] %}
+            {% set entry_time = session[1] %}
+            <section class="client-grid" style="grid-template-columns: minmax(320px, 760px);">
+                <article class="subscription-card">
+                    <form method="post" action="/client/pay" class="subscription-form payment-form" data-price-per-hour="500">
+                        <input type="hidden" name="plate" value="{{ plate }}">
 
-{% for plate in plates %}
-<form method="post" action="/client/pay">
-    <input type="hidden" name="plate" value="{{ plate }}">
+                        <div class="subscription-top">
+                            <div>
+                                <div class="subscription-label">Номер автомобиля</div>
+                                <div class="subscription-plate">{{ plate }}</div>
+                            </div>
+                            <span class="subscription-status">Внутри</span>
+                        </div>
 
-    <strong>{{ plate }}</strong><br>
+                        <div class="subscription-label">
+                            Въезд: {{ entry_time.strftime('%Y-%m-%d %H:%M') if entry_time else '—' }}
+                        </div>
 
-    <select name="hours">
-        <option value="1">1 сағат</option>
-        <option value="3">3 сағат</option>
-        <option value="24">1 күн</option>
-        <option value="72">3 күн</option>
-    </select>
+                        <div class="payment-grid">
+                            <label class="custom-duration">
+                                <span>Дни</span>
+                                <input name="days" type="number" min="0" value="0" required>
+                            </label>
+                            <label class="custom-duration">
+                                <span>Часы</span>
+                                <input name="hours" type="number" min="0" value="1" required>
+                            </label>
+                        </div>
 
-    <button type="submit">Төлеу</button>
-</form>
-<hr>
-{% endfor %}
-
+                        <div class="subscription-summary">
+                            <div>
+                                <div class="summary-label">Итого часов</div>
+                                <div class="summary-total"><span data-total-hours>1</span> ч</div>
+                            </div>
+                            <div>
+                                <div class="summary-label">К оплате</div>
+                                <div class="summary-total">₸ <span data-total-price>500</span></div>
+                            </div>
+                            <button type="submit" class="btn btn-green">Оплатить</button>
+                        </div>
+                    </form>
+                </article>
+            </section>
+            {% else %}
+            <section class="client-empty">
+                <h2>Сейчас машин нет</h2>
+                <p>Когда автомобиль заедет на парковку, его номер появится здесь автоматически.</p>
+            </section>
+            {% endif %}
+        </main>
+    </div>
+    <script src="/static/js/client.js"></script>
 </body>
 </html>

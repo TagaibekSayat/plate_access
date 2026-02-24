@@ -42,13 +42,12 @@ def get_frames():
                     b"\r\n"
                 )
             except Exception:
-                # Кез келген қате болса (мысалы, файл басқа процесспен жабық болса)
                 time.sleep(0.01)
                 continue
         else:
             time.sleep(0.1)
         
-        # FPS-ті бақылау (шамамен 25-30 кадр/сек)
+        
         time.sleep(0.04)
 
 @app.get("/video_feed")
@@ -147,7 +146,6 @@ async def remove_plate(plate: str = Form(...)):
     return RedirectResponse("/plates", status_code=303)
 
 # ===================== LOGS =====================
-# ❗ АТЫ СОЛ ҚАЛПЫ (/logs), ТЕК ДЕРЕККӨЗ ДҰРЫСТАЛДЫ
 
 @app.get("/logs", response_class=HTMLResponse)
 async def logs_page(request: Request):
@@ -158,12 +156,10 @@ async def logs_page(request: Request):
         SELECT
             plate,
             status,
-            entry_time,
-            exit_time,
-            duration_seconds,
-            paid_until
-        FROM parking_sessions
-        ORDER BY COALESCE(exit_time, entry_time) DESC
+            reason,
+            created_at
+        FROM access_logs
+        ORDER BY created_at DESC
         LIMIT 500
     """)
 
@@ -201,6 +197,47 @@ async def get_status():
         "status": "online",
         "barrier": barrier.status()
     }
+@app.get("/client", response_class=HTMLResponse)
+async def client_page(request: Request):
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT ps.plate, ps.entry_time
+        FROM access_logs al
+        JOIN parking_sessions ps
+          ON ps.plate = al.plate
+        WHERE ps.status = 'INSIDE'
+        ORDER BY al.created_at DESC
+        LIMIT 1
+    """)
+    session = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    return templates.TemplateResponse(
+        "client.html",
+        {
+            "request": request,
+            "session": session
+        }
+    )
+
+@app.post("/client/pay")
+async def client_pay(
+    plate: str = Form(...),
+    hours: int = Form(0),
+    days: int = Form(0)
+):
+    clean_plate = plate.upper().strip()
+    total_hours = max(0, hours) + (max(0, days) * 24)
+    if total_hours <= 0:
+        total_hours = 1
+
+    register_payment(clean_plate, total_hours)
+
+    return RedirectResponse("/client", status_code=303)
 
 
 

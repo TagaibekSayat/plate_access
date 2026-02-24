@@ -229,3 +229,298 @@ body {
 .btn-green .btn-icon { color: #16a34a; }
 .btn-red .btn-icon { color: #dc2626; }
 
+/* ===== CLIENT PAGE ===== */
+.client-body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+        radial-gradient(1200px 600px at -10% -10%, #2b4b88 0%, rgba(43, 75, 136, 0) 70%),
+        radial-gradient(900px 500px at 110% 0%, #2d7fb4 0%, rgba(45, 127, 180, 0) 65%),
+        #eef3f9;
+}
+
+.client-shell {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    min-height: 100vh;
+}
+
+.client-shell-single {
+    grid-template-columns: 1fr;
+}
+
+.client-sidebar {
+    background: linear-gradient(180deg, #0f2a58, #14274a 55%, #192845);
+    color: #e2e8f0;
+    padding: 28px 22px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.client-brand {
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: #f8fafc;
+    margin-bottom: 8px;
+}
+
+.client-brand-subtitle {
+    margin: 0 0 24px;
+    color: #93c5fd;
+    font-size: 0.95rem;
+}
+
+.client-nav {
+    display: grid;
+    gap: 8px;
+}
+
+.client-nav a {
+    color: #bfd2ef;
+    text-decoration: none;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: 0.2s ease;
+}
+
+.client-nav a:hover {
+    color: #ffffff;
+    background: rgba(56, 189, 248, 0.16);
+}
+
+.client-nav a.active {
+    color: #0f172a;
+    background: linear-gradient(135deg, #60a5fa, #38bdf8);
+}
+
+.client-sidebar-footer {
+    margin-top: auto;
+    display: grid;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: #93c5fd;
+}
+
+.client-main {
+    padding: 36px;
+}
+
+.client-main-wide {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.client-header h1 {
+    margin: 0;
+    font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+    color: #0f172a;
+}
+
+.client-header p {
+    margin: 8px 0 0;
+    color: #475569;
+    font-size: 1rem;
+}
+
+.client-grid {
+    margin-top: 20px;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.subscription-card {
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid #dbe5f1;
+    border-radius: 20px;
+    box-shadow: 0 16px 35px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+}
+
+.subscription-form {
+    padding: 18px;
+    display: grid;
+    gap: 16px;
+}
+
+.subscription-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.subscription-label {
+    font-size: 0.82rem;
+    color: #64748b;
+}
+
+.subscription-plate {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: 1px;
+}
+
+.subscription-status {
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.plan-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.plan-btn {
+    border: 1px solid #dbe5f1;
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 10px;
+    display: grid;
+    gap: 4px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.plan-btn:hover {
+    border-color: #60a5fa;
+}
+
+.plan-btn.active {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #dbeafe, #eff6ff);
+}
+
+.plan-month {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #334155;
+}
+
+.plan-price {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.custom-duration {
+    display: grid;
+    gap: 6px;
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.custom-duration input {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    outline: none;
+}
+
+.custom-duration input:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.22);
+}
+
+.payment-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.subscription-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 12px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 14px;
+}
+
+.summary-label {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.summary-total {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.client-empty {
+    margin-top: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #dbe5f1;
+    border-radius: 18px;
+    padding: 24px;
+}
+
+.client-empty h2 {
+    margin: 0 0 6px;
+    color: #0f172a;
+}
+
+.client-empty p {
+    margin: 0;
+    color: #475569;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+    .sidebar {
+        position: static;
+        width: 100%;
+        height: auto;
+    }
+
+    .layout {
+        flex-direction: column;
+    }
+
+    .main {
+        margin-left: 0;
+        width: 100%;
+        padding: 24px;
+    }
+
+    .client-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .client-main {
+        padding: 24px;
+    }
+}
+
+@media (max-width: 640px) {
+    .plan-buttons {
+        grid-template-columns: 1fr;
+    }
+
+    .payment-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .subscription-summary {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .subscription-summary .btn {
+        width: 100%;
+    }
+}
+

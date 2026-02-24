@@ -2,13 +2,13 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Журнал доступа | Plate Access</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=2">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="3">
+    <title>Журнал логов | Plate Access</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=9">
 </head>
 <body>
-
 <div class="layout">
-
     <aside class="sidebar">
         <div class="sidebar-logo">
             <span style="font-size: 1.6rem;">🚗</span>
@@ -23,73 +23,48 @@
     </aside>
 
     <main class="main">
-
         <header class="page-header">
-            <h1>История въезда и выезда</h1>
-            <p>Полный журнал всех автомобилей</p>
+            <h1>История с камеры</h1>
+            <p>Все события распознавания номеров (access_logs)</p>
         </header>
 
         <section class="logs-card">
-
             <table class="logs-table">
                 <thead>
                     <tr>
                         <th>Номер</th>
-                        <th>Событие</th>
+                        <th>Статус</th>
+                        <th>Причина</th>
                         <th>Дата</th>
-                        <th>Длительность</th>
-                        <th>Оплачено до</th>
                     </tr>
                 </thead>
-
                 <tbody>
-                    {% for plate, status, entry_time, exit_time, duration, paid_until in logs %}
+                    {% for plate, status, reason, created_at in logs %}
                     <tr>
                         <td class="plate">{{ plate }}</td>
-
                         <td>
-                            {% if status == 'INSIDE' %}
-                                <span class="status status-granted"> ВЪЕЗД</span>
-                            {% elif status == 'EXITED' %}
-                                <span class="status status-denied"> ВЫЕЗД</span>
+                            {% if status == 'GRANTED' %}
+                                <span class="status status-granted">РАЗРЕШЕНО</span>
+                            {% elif status == 'DENIED' %}
+                                <span class="status status-denied">ОТКАЗ</span>
+                            {% else %}
+                                <span class="status">{{ status }}</span>
                             {% endif %}
                         </td>
-
+                        <td>{{ reason or '—' }}</td>
                         <td>
-                            {% if status == 'INSIDE' and entry_time %}
-                                {{ entry_time.strftime('%Y-%m-%d %H:%M') }}
-                            {% elif exit_time %}
-                                {{ exit_time.strftime('%Y-%m-%d %H:%M') }}
+                            {% if created_at %}
+                                {{ created_at.strftime('%Y-%m-%d %H:%M:%S') }}
                             {% else %}
                                 —
-                            {% endif %}
-                        </td>
-
-                        <td>
-                            {% if duration %}
-                                {{ (duration // 3600) }} ч {{ ((duration % 3600) // 60) }} мин
-                            {% else %}
-                                —
-                            {% endif %}
-                        </td>
-
-                        <td>
-                            {% if paid_until %}
-                                {{ paid_until.strftime('%Y-%m-%d %H:%M') }}
-                            {% else %}
-                                <span style="color:#c0392b;">Не оплачено</span>
                             {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-
         </section>
-
     </main>
-
 </div>
-
 </body>
 </html>
