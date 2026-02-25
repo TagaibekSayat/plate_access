@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="3">
     <title>Журнал логов | Plate Access</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=9">
+    <link rel="stylesheet" href="/static/css/style.css?v=11">
 </head>
 <body>
 <div class="layout">
@@ -17,19 +16,86 @@
 
         <nav>
             <a href="/">📊 Панель управления</a>
-            <a href="/logs" class="active">📝 Журнал логов</a>
+            <a href="/logs" class="active">🧾 Журнал логов</a>
             <a href="#">⚙️ Настройки</a>
         </nav>
     </aside>
 
-    <main class="main">
-        <header class="page-header">
-            <h1>История с камеры</h1>
-            <p>Все события распознавания номеров (access_logs)</p>
+    <main class="main logsx-main">
+        <header class="logsx-header">
+            <h1>Журнал логов</h1>
+            <p>Все события распознанных номеров (access_logs)</p>
         </header>
 
-        <section class="logs-card">
-            <table class="logs-table">
+        <section class="logsx-filters">
+            <form method="get" action="/logs" class="logsx-filters-form" id="logs-filter-form">
+                <input
+                    type="text"
+                    class="logsx-filter-input"
+                    name="plate"
+                    value="{{ filter_plate }}"
+                    placeholder="🔎 Номерді іздеу..."
+                >
+                <select class="logsx-filter-select" name="status">
+                    <option value="ALL" {% if filter_status == 'ALL' %}selected{% endif %}>Барлығы</option>
+                    <option value="GRANTED" {% if filter_status == 'GRANTED' %}selected{% endif %}>Рұқсат</option>
+                    <option value="DENIED" {% if filter_status == 'DENIED' %}selected{% endif %}>Бас тарту</option>
+                </select>
+                <input
+                    type="date"
+                    class="logsx-filter-date"
+                    name="log_date"
+                    value="{{ selected_date }}"
+                >
+                <label class="logsx-use-date">
+                    <input type="checkbox" name="use_date" value="1" {% if use_date == 1 %}checked{% endif %}>
+                    Дата фильтрін қосу
+                </label>
+                <input type="hidden" name="page" value="{{ current_page }}">
+                <button class="logsx-filter-btn" type="submit">Поиск</button>
+                <a class="logsx-reset-btn" href="/logs">Сброс</a>
+            </form>
+        </section>
+
+        <section class="logsx-stats">
+            <article class="logsx-stat">
+                <div>
+                    <h3>Бүгінгі оқиғалар</h3>
+                    <p>Все события распознанных номеров</p>
+                </div>
+                <strong id="stat-total">{{ today_count }}</strong>
+            </article>
+            <article class="logsx-stat logsx-stat-good">
+                <div>
+                    <h3>Рұқсат</h3>
+                    <p>Барлығы</p>
+                </div>
+                <strong id="stat-granted">{{ granted_count }}</strong>
+            </article>
+            <article class="logsx-stat logsx-stat-bad">
+                <div>
+                    <h3>Бас тарту</h3>
+                    <p>Барлығы</p>
+                </div>
+                <strong id="stat-denied">{{ denied_count }}</strong>
+            </article>
+        </section>
+
+        <section class="logsx-table-wrap">
+            <div class="logsx-table-title">
+                <h2>Номер</h2>
+                <div class="logsx-pagination-top" id="pagination-top">
+                    {% for p in visible_pages %}
+                        {% if p == current_page %}
+                            <span class="active">{{ p }}</span>
+                        {% else %}
+                            <a href="/logs?plate={{ filter_plate }}&status={{ filter_status }}&log_date={{ selected_date }}&use_date={{ use_date }}&page={{ p }}">{{ p }}</a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <table class="logs-table logsx-table">
                 <thead>
                     <tr>
                         <th>Номер</th>
@@ -38,33 +104,63 @@
                         <th>Дата</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="logs-body">
+                    {% if logs %}
                     {% for plate, status, reason, created_at in logs %}
                     <tr>
                         <td class="plate">{{ plate }}</td>
                         <td>
                             {% if status == 'GRANTED' %}
-                                <span class="status status-granted">РАЗРЕШЕНО</span>
+                                <span class="logsx-badge logsx-badge-good">✓ Рұқсат</span>
                             {% elif status == 'DENIED' %}
-                                <span class="status status-denied">ОТКАЗ</span>
+                                <span class="logsx-badge logsx-badge-bad">✕ Бас тарту</span>
                             {% else %}
-                                <span class="status">{{ status }}</span>
+                                <span class="logsx-badge">{{ status }}</span>
                             {% endif %}
                         </td>
-                        <td>{{ reason or '—' }}</td>
+                        <td>{{ reason or "—" }}</td>
                         <td>
                             {% if created_at %}
-                                {{ created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                {{ created_at.strftime('%Y-%m-%d %H:%M') }}
                             {% else %}
                                 —
                             {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="logsx-empty">Ештеңе табылмады. Дата фильтрін өшіріп немесе номерді тексеріп көріңіз.</td>
+                    </tr>
+                    {% endif %}
                 </tbody>
             </table>
+
+            <div class="logsx-footer">
+                <div class="logsx-pagination-bottom" id="pagination-bottom">
+                    {% if current_page > 1 %}
+                        <a href="/logs?plate={{ filter_plate }}&status={{ filter_status }}&log_date={{ selected_date }}&use_date={{ use_date }}&page={{ current_page - 1 }}">‹</a>
+                    {% endif %}
+                    {% for p in visible_pages %}
+                        {% if p == current_page %}
+                            <span class="active">{{ p }}</span>
+                        {% else %}
+                            <a href="/logs?plate={{ filter_plate }}&status={{ filter_status }}&log_date={{ selected_date }}&use_date={{ use_date }}&page={{ p }}">{{ p }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    {% if current_page < total_pages %}
+                        <a href="/logs?plate={{ filter_plate }}&status={{ filter_status }}&log_date={{ selected_date }}&use_date={{ use_date }}&page={{ current_page + 1 }}">›</a>
+                    {% endif %}
+                </div>
+                <div id="logs-range">
+                    Көрсетілуде
+                    {{ ((current_page - 1) * 20 + 1) if total_count > 0 else 0 }}–{{ (current_page - 1) * 20 + logs|length }}
+                    / {{ total_count }}
+                </div>
+            </div>
         </section>
     </main>
 </div>
+<script src="/static/js/logs.js"></script>
 </body>
 </html>

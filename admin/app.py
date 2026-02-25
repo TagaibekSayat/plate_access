@@ -2,7 +2,7 @@ import os
 import time
 import cv2
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -147,10 +147,59 @@ async def remove_plate(plate: str = Form(...)):
 
 # ===================== LOGS =====================
 
-@app.get("/logs", response_class=HTMLResponse)
-async def logs_page(request: Request):
+def fetch_logs_data(
+    plate: str = "",
+    status: str = "ALL",
+    log_date: str = "",
+    page: int = 1,
+    use_date: int = 0
+):
     conn = get_conn()
     cur = conn.cursor()
+
+    page = max(1, page)
+    per_page = 20
+
+    filters = []
+    params = []
+
+    if plate.strip():
+        normalized_plate = (
+            plate.strip()
+            .upper()
+            .replace(" ", "")
+            .replace("-", "")
+        )
+        filters.append("REPLACE(REPLACE(UPPER(plate), ' ', ''), '-', '') LIKE %s")
+        params.append(f"%{normalized_plate}%")
+
+    if status in ("GRANTED", "DENIED"):
+        filters.append("status = %s")
+        params.append(status)
+
+    if use_date and log_date:
+        filters.append("DATE(created_at) = %s")
+        params.append(log_date)
+
+    where_sql = f"WHERE {' AND '.join(filters)}" if filters else ""
+
+    cur.execute(
+        f"""
+        SELECT COUNT(*)
+        FROM access_logs
+        {where_sql}
+        """,
+        params
+    )
+    total_count = cur.fetchone()[0] or 0
+    total_pages = max(1, (total_count + per_page - 1) // per_page)
+    if page > total_pages:
+        page = total_pages
+    offset = (page - 1) * per_page
+    max_visible_pages = 10
+    window_start = ((page - 1) // max_visible_pages) * max_visible_pages + 1
+    window_end = min(total_pages, window_start + max_visible_pages - 1)
+    visible_pages = list(range(window_start, window_end + 1))
 
     cur.execute("""
         SELECT
@@ -159,22 +208,113 @@ async def logs_page(request: Request):
             reason,
             created_at
         FROM access_logs
+        """ + where_sql + """
         ORDER BY created_at DESC
-        LIMIT 500
-    """)
+        LIMIT %s OFFSET %s
+    """, params + [per_page, offset])
 
     logs = cur.fetchall()
 
+    cur.execute(
+        f"""
+        SELECT
+            COUNT(*) AS total,
+            COALESCE(SUM(CASE WHEN status = 'GRANTED' THEN 1 ELSE 0 END), 0) AS granted,
+            COALESCE(SUM(CASE WHEN status = 'DENIED' THEN 1 ELSE 0 END), 0) AS denied
+        FROM access_logs
+        {where_sql}
+        """,
+        params
+    )
+    stats_row = cur.fetchone() or (0, 0, 0)
+    today_count, granted_count, denied_count = stats_row
+
     cur.close()
     conn.close()
+
+    logs_json = []
+    for row in logs:
+        plate_val, status_val, reason_val, created_at_val = row
+        logs_json.append({
+            "plate": plate_val,
+            "status": status_val,
+            "reason": reason_val or "—",
+            "created_at": created_at_val.strftime("%Y-%m-%d %H:%M") if created_at_val else "—",
+        })
+
+    return {
+        "logs": logs,
+        "logs_json": logs_json,
+        "today_count": today_count,
+        "granted_count": granted_count,
+        "denied_count": denied_count,
+        "selected_date": log_date,
+        "filter_plate": plate,
+        "filter_status": status,
+        "use_date": use_date,
+        "current_page": page,
+        "total_pages": total_pages,
+        "total_count": total_count,
+        "visible_pages": visible_pages,
+        "per_page": per_page,
+    }
+
+@app.get("/logs", response_class=HTMLResponse)
+async def logs_page(
+    request: Request,
+    plate: str = "",
+    status: str = "ALL",
+    log_date: str = "",
+    page: int = 1,
+    use_date: int = 0
+):
+    payload = fetch_logs_data(
+        plate=plate,
+        status=status,
+        log_date=log_date,
+        page=page,
+        use_date=use_date
+    )
 
     return templates.TemplateResponse(
         "logs.html",
         {
             "request": request,
-            "logs": logs
+            **payload
         }
     )
+
+
+@app.get("/api/logs")
+async def logs_api(
+    plate: str = "",
+    status: str = "ALL",
+    log_date: str = "",
+    page: int = 1,
+    use_date: int = 0
+):
+    payload = fetch_logs_data(
+        plate=plate,
+        status=status,
+        log_date=log_date,
+        page=page,
+        use_date=use_date
+    )
+    return JSONResponse({
+        "logs": payload["logs_json"],
+        "today_count": payload["today_count"],
+        "granted_count": payload["granted_count"],
+        "denied_count": payload["denied_count"],
+        "selected_date": payload["selected_date"],
+        "filter_plate": payload["filter_plate"],
+        "filter_status": payload["filter_status"],
+        "use_date": payload["use_date"],
+        "current_page": payload["current_page"],
+        "total_pages": payload["total_pages"],
+        "total_count": payload["total_count"],
+        "visible_pages": payload["visible_pages"],
+        "per_page": payload["per_page"],
+    })
 
 # ===================== BARRIER CONTROL =====================
 

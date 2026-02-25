@@ -229,6 +229,222 @@ body {
 .btn-green .btn-icon { color: #16a34a; }
 .btn-red .btn-icon { color: #dc2626; }
 
+/* ===== LOGS REDESIGN ===== */
+.logsx-main {
+    background: radial-gradient(1200px 500px at -15% -20%, #dbeafe 0%, rgba(219, 234, 254, 0) 65%), #eef2ff;
+    min-height: 100vh;
+}
+
+.logsx-header h1 {
+    margin: 0;
+    font-size: clamp(2rem, 3.1vw, 2.9rem);
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.logsx-header p {
+    margin: 10px 0 0;
+    color: #64748b;
+    font-size: 1.05rem;
+}
+
+.logsx-filters {
+    margin-top: 18px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid #dbe3f2;
+    border-radius: 18px;
+    padding: 12px;
+    box-shadow: 0 15px 30px rgba(15, 23, 42, 0.05);
+}
+
+.logsx-filters-form {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1.6fr auto 0.9fr auto;
+    gap: 12px;
+    align-items: center;
+}
+
+.logsx-filter-input,
+.logsx-filter-select,
+.logsx-filter-date {
+    background: #f8fafc;
+    border: 1px solid #d7dfed;
+    border-radius: 12px;
+    padding: 13px 14px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.logsx-filter-btn {
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #60a5fa, #3b82f6);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.logsx-use-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #475569;
+    font-size: 0.92rem;
+    white-space: nowrap;
+}
+
+.logsx-reset-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: #475569;
+    text-decoration: none;
+    background: #f8fafc;
+    font-weight: 600;
+}
+
+.logsx-stats {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.logsx-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px;
+    border-radius: 16px;
+    border: 1px solid #dbe3f2;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.logsx-stat h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: #0f172a;
+}
+
+.logsx-stat p {
+    margin: 6px 0 0;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.logsx-stat strong {
+    font-size: 2.1rem;
+    color: #2563eb;
+}
+
+.logsx-stat-good strong { color: #16a34a; }
+.logsx-stat-bad strong { color: #dc2626; }
+
+.logsx-table-wrap {
+    margin-top: 16px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid #dbe3f2;
+    border-radius: 18px;
+    padding: 16px 18px;
+    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+}
+
+.logsx-table-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logsx-table-title h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: #0f172a;
+}
+
+.logsx-pagination-top,
+.logsx-pagination-bottom {
+    display: inline-flex;
+    gap: 8px;
+}
+
+.logsx-pagination-top span,
+.logsx-pagination-top a,
+.logsx-pagination-bottom span,
+.logsx-pagination-bottom a {
+    min-width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    border: 1px solid #d8e1ef;
+    color: #64748b;
+    background: #fff;
+    text-decoration: none;
+}
+
+.logsx-pagination-top span.active,
+.logsx-pagination-bottom span.active,
+.logsx-pagination-top a.active,
+.logsx-pagination-bottom a.active {
+    background: linear-gradient(135deg, #60a5fa, #3b82f6);
+    color: #fff;
+    border-color: #60a5fa;
+}
+
+.logsx-table {
+    margin-top: 10px;
+}
+
+.logsx-table th {
+    font-size: 1rem;
+    color: #64748b;
+}
+
+.logsx-table td {
+    font-size: 1.05rem;
+}
+
+.logsx-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.logsx-badge-good {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.logsx-badge-bad {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.logsx-footer {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #64748b;
+}
+
+.logsx-empty {
+    text-align: center;
+    color: #64748b;
+    padding: 18px 10px;
+}
+
 /* ===== CLIENT PAGE ===== */
 .client-body {
     margin: 0;
@@ -503,6 +719,18 @@ body {
     .client-main {
         padding: 24px;
     }
+
+    .logsx-filters {
+        padding: 10px;
+    }
+
+    .logsx-filters-form {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .logsx-stats {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 640px) {
@@ -521,6 +749,26 @@ body {
 
     .subscription-summary .btn {
         width: 100%;
+    }
+
+    .logsx-filters {
+        padding: 8px;
+    }
+
+    .logsx-filters-form {
+        grid-template-columns: 1fr;
+    }
+
+    .logsx-table-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .logsx-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
     }
 }
 
