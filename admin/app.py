@@ -5,12 +5,20 @@ from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 
 from db.connection import get_conn
 from barrier.controller import BarrierController
 from db.parking_repo import register_payment
+from db.user_repo import verify_user
 
 app = FastAPI(title="Plate Access Control")
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET", "change-this-secret"),
+    same_site="lax",
+    https_only=False,
+)
 
 # ===================== STATIC & TEMPLATES =====================
 
@@ -18,6 +26,49 @@ app.mount("/static", StaticFiles(directory="admin/static"), name="static")
 templates = Jinja2Templates(directory="admin/templates")
 
 barrier = BarrierController()
+
+
+def is_admin_authenticated(request: Request) -> bool:
+    return bool(request.session.get("user_id"))
+
+
+def redirect_login():
+    return RedirectResponse("/login", status_code=303)
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    if is_admin_authenticated(request):
+        return RedirectResponse("/", status_code=303)
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request, "error": ""}
+    )
+
+
+@app.post("/login", response_class=HTMLResponse)
+async def login_submit(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...)
+):
+    user = verify_user(username, password)
+    if not user:
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": "Неверный логин или пароль"},
+            status_code=401
+        )
+
+    request.session["user_id"] = user["id"]
+    request.session["username"] = user["username"]
+    return RedirectResponse("/", status_code=303)
+
+
+@app.post("/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/login", status_code=303)
 
 # ===================== LIVE VIDEO =====================
 
@@ -51,7 +102,9 @@ def get_frames():
         time.sleep(0.04)
 
 @app.get("/video_feed")
-def video_feed():
+def video_feed(request: Request):
+    if not is_admin_authenticated(request):
+        return redirect_login()
     return StreamingResponse(
         get_frames(),
         media_type="multipart/x-mixed-replace; boundary=frame"
@@ -61,6 +114,8 @@ def video_feed():
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
+    if not is_admin_authenticated(request):
+        return redirect_login()
     try:
         conn = get_conn()
         cur = conn.cursor()
@@ -93,6 +148,8 @@ async def index(request: Request):
 
 @app.get("/plates", response_class=HTMLResponse)
 async def plates_page(request: Request):
+    if not is_admin_authenticated(request):
+        return redirect_login()
     conn = get_conn()
     cur = conn.cursor()
 
@@ -112,7 +169,9 @@ async def plates_page(request: Request):
 
 
 @app.post("/add-plate")
-async def add_plate(plate: str = Form(...)):
+async def add_plate(request: Request, plate: str = Form(...)):
+    if not is_admin_authenticated(request):
+        return redirect_login()
     clean_plate = plate.upper().replace(" ", "").strip()
     if not clean_plate:
         return RedirectResponse("/plates", status_code=303)
@@ -133,7 +192,9 @@ async def add_plate(plate: str = Form(...)):
 
 
 @app.post("/remove-plate")
-async def remove_plate(plate: str = Form(...)):
+async def remove_plate(request: Request, plate: str = Form(...)):
+    if not is_admin_authenticated(request):
+        return redirect_login()
     conn = get_conn()
     cur = conn.cursor()
 
@@ -268,6 +329,8 @@ async def logs_page(
     page: int = 1,
     use_date: int = 0
 ):
+    if not is_admin_authenticated(request):
+        return redirect_login()
     payload = fetch_logs_data(
         plate=plate,
         status=status,
@@ -287,12 +350,15 @@ async def logs_page(
 
 @app.get("/api/logs")
 async def logs_api(
+    request: Request,
     plate: str = "",
     status: str = "ALL",
     log_date: str = "",
     page: int = 1,
     use_date: int = 0
 ):
+    if not is_admin_authenticated(request):
+        return JSONResponse({"detail": "Unauthorized"}, status_code=401)
     payload = fetch_logs_data(
         plate=plate,
         status=status,
@@ -319,13 +385,17 @@ async def logs_api(
 # ===================== BARRIER CONTROL =====================
 
 @app.post("/barrier/open")
-async def open_barrier():
+async def open_barrier(request: Request):
+    if not is_admin_authenticated(request):
+        return redirect_login()
     barrier.open(manual=True)
     return RedirectResponse("/", status_code=303)
 
 
 @app.post("/barrier/close")
-async def close_barrier():
+async def close_barrier(request: Request):
+    if not is_admin_authenticated(request):
+        return redirect_login()
     barrier.close()
     return RedirectResponse("/", status_code=303)
 

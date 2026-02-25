@@ -16,13 +16,15 @@ function buildQueryFromForm(form) {
 }
 
 function renderPagination(container, payload, queryBase) {
-    const { current_page: currentPage, visible_pages: visiblePages, total_pages: totalPages } = payload;
+    const currentPage = payload.current_page;
+    const visiblePages = payload.visible_pages;
+    const totalPages = payload.total_pages;
     const html = [];
 
     if (container.id === "pagination-bottom" && currentPage > 1) {
         const prev = new URLSearchParams(queryBase);
         prev.set("page", String(currentPage - 1));
-        html.push(`<a href="/logs?${prev.toString()}">вЂ№</a>`);
+        html.push(`<a href="/logs?${prev.toString()}">‹</a>`);
     }
 
     visiblePages.forEach((p) => {
@@ -38,7 +40,7 @@ function renderPagination(container, payload, queryBase) {
     if (container.id === "pagination-bottom" && currentPage < totalPages) {
         const next = new URLSearchParams(queryBase);
         next.set("page", String(currentPage + 1));
-        html.push(`<a href="/logs?${next.toString()}">вЂє</a>`);
+        html.push(`<a href="/logs?${next.toString()}">›</a>`);
     }
 
     container.innerHTML = html.join("");
@@ -72,23 +74,23 @@ async function refreshLogs() {
     const body = document.getElementById("logs-body");
     if (body) {
         if (!payload.logs || payload.logs.length === 0) {
-            body.innerHTML = `<tr><td colspan="4" class="logsx-empty">РќРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ. РџСЂРѕРІРµСЂСЊС‚Рµ РЅРѕРјРµСЂ РёР»Рё РѕС‚РєР»СЋС‡РёС‚Рµ С„РёР»СЊС‚СЂ РїРѕ РґР°С‚Рµ.</td></tr>`;
+            body.innerHTML = '<tr><td colspan="4" class="logsx-empty">Ничего не найдено. Проверьте номер или отключите фильтр по дате.</td></tr>';
         } else {
             body.innerHTML = payload.logs
                 .map((row) => {
                     let badge = `<span class="logsx-badge">${escapeHtml(row.status)}</span>`;
                     if (row.status === "GRANTED") {
-                        badge = `<span class="logsx-badge logsx-badge-good">вњ“ Р Р°Р·СЂРµС€РµРЅРѕ</span>`;
+                        badge = '<span class="logsx-badge logsx-badge-good">✓ Разрешено</span>';
                     } else if (row.status === "DENIED") {
-                        badge = `<span class="logsx-badge logsx-badge-bad">вњ• РћС‚РєР°Р·</span>`;
+                        badge = '<span class="logsx-badge logsx-badge-bad">✕ Отказ</span>';
                     }
 
                     return `
                         <tr>
                             <td class="plate">${escapeHtml(row.plate)}</td>
                             <td>${badge}</td>
-                            <td>${escapeHtml(row.reason || "вЂ”")}</td>
-                            <td>${escapeHtml(row.created_at || "вЂ”")}</td>
+                            <td>${escapeHtml(row.reason || "—")}</td>
+                            <td>${escapeHtml(row.created_at || "—")}</td>
                         </tr>
                     `;
                 })
@@ -100,7 +102,7 @@ async function refreshLogs() {
     if (range) {
         const from = payload.total_count > 0 ? (payload.current_page - 1) * payload.per_page + 1 : 0;
         const to = (payload.current_page - 1) * payload.per_page + (payload.logs ? payload.logs.length : 0);
-        range.textContent = `РџРѕРєР°Р·Р°РЅРѕ ${from}вЂ“${to} / ${payload.total_count}`;
+        range.textContent = `Показано ${from}–${to} / ${payload.total_count}`;
     }
 
     const top = document.getElementById("pagination-top");

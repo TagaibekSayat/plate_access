@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход | Plate Access</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=11">
+</head>
+<body class="client-body">
+    <main class="client-main client-main-wide" style="max-width: 460px; margin: 80px auto;">
+        <section class="logsx-table-wrap">
+            <h1 style="margin:0 0 8px 0;">Вход в админ-панель</h1>
+            <p style="margin:0 0 16px 0; color:#64748b;">Введите логин и пароль</p>
+
+            {% if error %}
+            <div style="margin-bottom: 12px; padding: 10px 12px; border-radius: 10px; background: #fee2e2; color: #b91c1c;">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post" action="/login" class="subscription-form">
+                <label class="custom-duration">
+                    <span>Логин</span>
+                    <input type="text" name="username" required autocomplete="username">
+                </label>
+
+                <label class="custom-duration">
+                    <span>Пароль</span>
+                    <input type="password" name="password" required autocomplete="current-password">
+                </label>
+
+                <button type="submit" class="btn btn-green">Войти</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

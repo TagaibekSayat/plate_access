@@ -9,14 +9,18 @@
 <body>
 <div class="layout">
     <aside class="sidebar">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 40px;">
-                <h1 style="margin: 0; border: none;">Контроль доступа</h1>
-            </div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 40px;">
+            <h1 style="margin: 0; border: none;">Контроль доступа</h1>
+        </div>
 
-        <nav>   
+        <nav>
             <a href="/">📊 Панель управления</a>
             <a href="/logs" class="active">🧾 Журнал логов</a>
         </nav>
+
+        <form method="post" action="/logout" style="margin-top: auto;">
+            <button type="submit" style="background:none; border:none; color:#f87171; padding:0; cursor:pointer;">🚪 Выйти</button>
+        </form>
     </aside>
 
     <main class="main logsx-main">
@@ -35,9 +39,9 @@
                     placeholder="🔎 Поиск номера..."
                 >
                 <select class="logsx-filter-select" name="status">
-                    <option value="ALL" {% if filter_status == 'ALL' %}selected{% endif %}>Все</option>
-                    <option value="GRANTED" {% if filter_status == 'GRANTED' %}selected{% endif %}>Разрешено</option>
-                    <option value="DENIED" {% if filter_status == 'DENIED' %}selected{% endif %}>Отказ</option>
+                    <option value="ALL" {% if filter_status == "ALL" %}selected{% endif %}>Все</option>
+                    <option value="GRANTED" {% if filter_status == "GRANTED" %}selected{% endif %}>Разрешено</option>
+                    <option value="DENIED" {% if filter_status == "DENIED" %}selected{% endif %}>Отказ</option>
                 </select>
                 <input
                     type="date"
@@ -108,9 +112,9 @@
                     <tr>
                         <td class="plate">{{ plate }}</td>
                         <td>
-                            {% if status == 'GRANTED' %}
+                            {% if status == "GRANTED" %}
                                 <span class="logsx-badge logsx-badge-good">✓ Разрешено</span>
-                            {% elif status == 'DENIED' %}
+                            {% elif status == "DENIED" %}
                                 <span class="logsx-badge logsx-badge-bad">✕ Отказ</span>
                             {% else %}
                                 <span class="logsx-badge">{{ status }}</span>
@@ -119,7 +123,7 @@
                         <td>{{ reason or "—" }}</td>
                         <td>
                             {% if created_at %}
-                                {{ created_at.strftime('%Y-%m-%d %H:%M') }}
+                                {{ created_at.strftime("%Y-%m-%d %H:%M") }}
                             {% else %}
                                 —
                             {% endif %}
