@@ -22,7 +22,7 @@ function renderPagination(container, payload, queryBase) {
     if (container.id === "pagination-bottom" && currentPage > 1) {
         const prev = new URLSearchParams(queryBase);
         prev.set("page", String(currentPage - 1));
-        html.push(`<a href="/logs?${prev.toString()}"><</a>`);
+        html.push(`<a href="/logs?${prev.toString()}">вЂ№</a>`);
     }
 
     visiblePages.forEach((p) => {
@@ -38,7 +38,7 @@ function renderPagination(container, payload, queryBase) {
     if (container.id === "pagination-bottom" && currentPage < totalPages) {
         const next = new URLSearchParams(queryBase);
         next.set("page", String(currentPage + 1));
-        html.push(`<a href="/logs?${next.toString()}">></a>`);
+        html.push(`<a href="/logs?${next.toString()}">вЂє</a>`);
     }
 
     container.innerHTML = html.join("");
@@ -55,7 +55,7 @@ async function refreshLogs() {
     }
 
     const response = await fetch(`/api/logs?${params.toString()}`, {
-        headers: { "Accept": "application/json" },
+        headers: { Accept: "application/json" },
         cache: "no-store",
     });
     if (!response.ok) return;
@@ -72,33 +72,35 @@ async function refreshLogs() {
     const body = document.getElementById("logs-body");
     if (body) {
         if (!payload.logs || payload.logs.length === 0) {
-            body.innerHTML = `<tr><td colspan="4" class="logsx-empty">Ештеңе табылмады. Дата фильтрін өшіріп немесе номерді тексеріп көріңіз.</td></tr>`;
+            body.innerHTML = `<tr><td colspan="4" class="logsx-empty">РќРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ. РџСЂРѕРІРµСЂСЊС‚Рµ РЅРѕРјРµСЂ РёР»Рё РѕС‚РєР»СЋС‡РёС‚Рµ С„РёР»СЊС‚СЂ РїРѕ РґР°С‚Рµ.</td></tr>`;
         } else {
-            body.innerHTML = payload.logs.map((row) => {
-                let badge = `<span class="logsx-badge">${escapeHtml(row.status)}</span>`;
-                if (row.status === "GRANTED") {
-                    badge = `<span class="logsx-badge logsx-badge-good">✓ Рұқсат</span>`;
-                } else if (row.status === "DENIED") {
-                    badge = `<span class="logsx-badge logsx-badge-bad">✕ Бас тарту</span>`;
-                }
+            body.innerHTML = payload.logs
+                .map((row) => {
+                    let badge = `<span class="logsx-badge">${escapeHtml(row.status)}</span>`;
+                    if (row.status === "GRANTED") {
+                        badge = `<span class="logsx-badge logsx-badge-good">вњ“ Р Р°Р·СЂРµС€РµРЅРѕ</span>`;
+                    } else if (row.status === "DENIED") {
+                        badge = `<span class="logsx-badge logsx-badge-bad">вњ• РћС‚РєР°Р·</span>`;
+                    }
 
-                return `
-                    <tr>
-                        <td class="plate">${escapeHtml(row.plate)}</td>
-                        <td>${badge}</td>
-                        <td>${escapeHtml(row.reason || "—")}</td>
-                        <td>${escapeHtml(row.created_at || "—")}</td>
-                    </tr>
-                `;
-            }).join("");
+                    return `
+                        <tr>
+                            <td class="plate">${escapeHtml(row.plate)}</td>
+                            <td>${badge}</td>
+                            <td>${escapeHtml(row.reason || "вЂ”")}</td>
+                            <td>${escapeHtml(row.created_at || "вЂ”")}</td>
+                        </tr>
+                    `;
+                })
+                .join("");
         }
     }
 
     const range = document.getElementById("logs-range");
     if (range) {
-        const from = payload.total_count > 0 ? ((payload.current_page - 1) * payload.per_page + 1) : 0;
+        const from = payload.total_count > 0 ? (payload.current_page - 1) * payload.per_page + 1 : 0;
         const to = (payload.current_page - 1) * payload.per_page + (payload.logs ? payload.logs.length : 0);
-        range.textContent = `Көрсетілуде ${from}–${to} / ${payload.total_count}`;
+        range.textContent = `РџРѕРєР°Р·Р°РЅРѕ ${from}вЂ“${to} / ${payload.total_count}`;
     }
 
     const top = document.getElementById("pagination-top");

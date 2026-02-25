@@ -9,15 +9,13 @@
 <body>
 <div class="layout">
     <aside class="sidebar">
-        <div class="sidebar-logo">
-            <span style="font-size: 1.6rem;">🚗</span>
-            <h2 style="margin:0;">Plate Access</h2>
-        </div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 40px;">
+                <h1 style="margin: 0; border: none;">Контроль доступа</h1>
+            </div>
 
-        <nav>
+        <nav>   
             <a href="/">📊 Панель управления</a>
             <a href="/logs" class="active">🧾 Журнал логов</a>
-            <a href="#">⚙️ Настройки</a>
         </nav>
     </aside>
 
@@ -34,12 +32,12 @@
                     class="logsx-filter-input"
                     name="plate"
                     value="{{ filter_plate }}"
-                    placeholder="🔎 Номерді іздеу..."
+                    placeholder="🔎 Поиск номера..."
                 >
                 <select class="logsx-filter-select" name="status">
-                    <option value="ALL" {% if filter_status == 'ALL' %}selected{% endif %}>Барлығы</option>
-                    <option value="GRANTED" {% if filter_status == 'GRANTED' %}selected{% endif %}>Рұқсат</option>
-                    <option value="DENIED" {% if filter_status == 'DENIED' %}selected{% endif %}>Бас тарту</option>
+                    <option value="ALL" {% if filter_status == 'ALL' %}selected{% endif %}>Все</option>
+                    <option value="GRANTED" {% if filter_status == 'GRANTED' %}selected{% endif %}>Разрешено</option>
+                    <option value="DENIED" {% if filter_status == 'DENIED' %}selected{% endif %}>Отказ</option>
                 </select>
                 <input
                     type="date"
@@ -49,7 +47,7 @@
                 >
                 <label class="logsx-use-date">
                     <input type="checkbox" name="use_date" value="1" {% if use_date == 1 %}checked{% endif %}>
-                    Дата фильтрін қосу
+                    Включить фильтр по дате
                 </label>
                 <input type="hidden" name="page" value="{{ current_page }}">
                 <button class="logsx-filter-btn" type="submit">Поиск</button>
@@ -60,22 +58,22 @@
         <section class="logsx-stats">
             <article class="logsx-stat">
                 <div>
-                    <h3>Бүгінгі оқиғалар</h3>
-                    <p>Все события распознанных номеров</p>
+                    <h3>События</h3>
+                    <p>Всего найдено записей</p>
                 </div>
                 <strong id="stat-total">{{ today_count }}</strong>
             </article>
             <article class="logsx-stat logsx-stat-good">
                 <div>
-                    <h3>Рұқсат</h3>
-                    <p>Барлығы</p>
+                    <h3>Разрешено</h3>
+                    <p>Всего</p>
                 </div>
                 <strong id="stat-granted">{{ granted_count }}</strong>
             </article>
             <article class="logsx-stat logsx-stat-bad">
                 <div>
-                    <h3>Бас тарту</h3>
-                    <p>Барлығы</p>
+                    <h3>Отказ</h3>
+                    <p>Всего</p>
                 </div>
                 <strong id="stat-denied">{{ denied_count }}</strong>
             </article>
@@ -111,9 +109,9 @@
                         <td class="plate">{{ plate }}</td>
                         <td>
                             {% if status == 'GRANTED' %}
-                                <span class="logsx-badge logsx-badge-good">✓ Рұқсат</span>
+                                <span class="logsx-badge logsx-badge-good">✓ Разрешено</span>
                             {% elif status == 'DENIED' %}
-                                <span class="logsx-badge logsx-badge-bad">✕ Бас тарту</span>
+                                <span class="logsx-badge logsx-badge-bad">✕ Отказ</span>
                             {% else %}
                                 <span class="logsx-badge">{{ status }}</span>
                             {% endif %}
@@ -130,7 +128,7 @@
                     {% endfor %}
                     {% else %}
                     <tr>
-                        <td colspan="4" class="logsx-empty">Ештеңе табылмады. Дата фильтрін өшіріп немесе номерді тексеріп көріңіз.</td>
+                        <td colspan="4" class="logsx-empty">Ничего не найдено. Проверьте номер или отключите фильтр по дате.</td>
                     </tr>
                     {% endif %}
                 </tbody>
@@ -153,7 +151,7 @@
                     {% endif %}
                 </div>
                 <div id="logs-range">
-                    Көрсетілуде
+                    Показано
                     {{ ((current_page - 1) * 20 + 1) if total_count > 0 else 0 }}–{{ (current_page - 1) * 20 + logs|length }}
                     / {{ total_count }}
                 </div>
