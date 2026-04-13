@@ -1,7 +1,5 @@
 import re
 
-# ai/plate_patterns.py
-
 PLATE_PATTERNS = {
 
     "KZ_NEW_3L": r"^\d{3}[A-Z]{3}\d{2}$",

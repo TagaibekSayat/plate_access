@@ -11,9 +11,8 @@ def get_conn():
     )
 
 def is_allowed(plate):
-    plate = plate.upper().strip() # Нөмірді үлкен әріпке айналдыру және артық пробелдерді алып тастау
+    plate = plate.upper().strip() 
     conn = get_conn()
-    # ... қалған код
 def is_allowed(plate):
     conn = get_conn()
     cur = conn.cursor()

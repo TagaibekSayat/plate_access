@@ -25,7 +25,7 @@ class PlateStability:
     def update(self, plate):
         now = time.time()
 
-        # ❌ Жарты номерді бірден reject
+        # Жарты номерді бірден reject
         if not is_complete_plate(plate):
             return None
 
@@ -34,14 +34,14 @@ class PlateStability:
             if now - self.last_access[plate] < self.cooldown:
                 return None
 
-        # ⏱ Бірінші көрінген уақыт
+        # Бірінші көрінген уақыт
         if plate not in self.first_seen:
             self.first_seen[plate] = now
 
-        # 🧮 Кадр санау
+        # Кадр санау
         self.counter[plate] = self.counter.get(plate, 0) + 1
 
-        # ⏱ Уақыт + кадр шарты
+        #Уақыт + кадр шарты
         if (
             self.counter[plate] >= self.frames_required
             and now - self.first_seen[plate] >= self.min_visible_time

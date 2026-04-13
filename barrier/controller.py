@@ -1,4 +1,3 @@
-# barrier/controller.py
 import time
 
 
@@ -7,8 +6,7 @@ class BarrierController:
         self.is_opened = False
         self.opened_at = None
         self.min_open_time = min_open_time
-        self.manual_open = False   #  админ қолмен ашты ма
-
+        self.manual_open = False   
     def open(self, manual=False):
         if not self.is_opened:
             print("🚧 Шлагбаум АШЫЛДЫ")
@@ -17,19 +15,15 @@ class BarrierController:
             self.manual_open = manual
 
     def can_close(self, car_present: bool) -> bool:
-        # жабық болса — ештеңе істемейміз
         if not self.is_opened:
             return False
 
-        # админ қолмен ашқан болса — автоматты жабылмайды
         if self.manual_open:
             return False
 
-        # машина әлі тұр
         if car_present:
             return False
 
-        # минималды ашық тұру уақыты
         if time.time() - self.opened_at < self.min_open_time:
             return False
 

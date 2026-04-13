@@ -97,7 +97,7 @@ def recognize_plate(img):
 
     for bbox, text, conf in results:
 
-        if conf < 0.65:   # көтердік
+        if conf < 0.65:   
             continue
 
         text = re.sub(r'[^A-Z0-9]', '', text.upper())
